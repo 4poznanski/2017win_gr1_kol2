@@ -14,117 +14,112 @@
 # data in text files (YAML, JSON).
 # If you have even more courage, try implementing user interface.
 
+import argparse
+import json
+import os.path
+            
 class School(object):
-	def __init__(self):
-		self.classes = []
-
-	def AddClass(self, clas):
-		self.classes.append(clas)
-
-	def GetAverage(self):
-		Average = 0
-		i = 0
-		for clas in self.classes:
-			if(clas.GetAverage() != None):
-				Average = Average + clas.GetAverage()
-				i = i + 1
-		if(i > 0):
-			return float(Average)/(i)
-		else:
-			return None
-
-class Class(object):
-	def __init__(self):
-		self.Students = []
-
-	def AddStudent(self, Student):
-		self.Students.append(Student)
-
-	def GetAverage(self):
-		Average = 0
-		i = 0
-		for Student in self.Students:
-			if(Student.GetAverage() != None):
-				Average = Average + Student.GetAverage()
-				i = i + 1
-		if(i > 0):
-			return float(Average)/(i)
-		else:
-			return None
-			
-
-class Student(object):
-	def __init__(self, Name, Surname):
-		self.Grades = []
-		self.Attendance = []
-		self.Name = Name
-		self.Surname = Surname
-
-	def AddGrade(self, Grade):
-		self.Grades.append(float(Grade))
-
-	def GetAverage(self):
-		Average = 0
-		i = 0
-		for Grade in self.Grades:
-			Average = Average + Grade
-			i = i + 1
-		if(i > 0):
-			return float(Average)/(i)
-		else:
-			return None
-
-	def AddAttendance(self, IsAtt):
-		self.Attendance.append(IsAtt)
-
-	def CountAttendance(self):
-		Counted = 0
-		i = 0
-		for Att in self.Attendance:
-			Counted = Counted + Att
-			i = i + 1
-		if(i > 0):
-			return float(Counted)/(i)
-		else:
-			return None
+    def __init__(self):
+        self.data = {}
+        
+    def add_class(self, name):
+        self.data[name] = {}
+        
+    def add_student(self, class_name, student_name):
+        self.data[class_name][student_name] = {"attendance": []}
+        
+    def add_subject(self, class_name, subject_name):
+        for student in self.data[class_name]:
+            self.data[class_name][student][subject_name] = []
+        
+    def add_grade(self, class_name, student_name, subject_name, grade):
+        self.data[class_name][student_name][subject_name].append(grade)
+        
+    def add_attendance(self, class_name, student_name, is_attended):
+        self.data[class_name][student_name]["attendance"].append(is_attended == 1)
+        
+    def get_attendance(self, class_name, student_name):
+        sum = 0
+        for attendance in self.data[class_name][student_name]["attendance"]:
+            if(attendance):
+                sum = sum +1
+        return float(sum)/len(self.data[class_name][student_name]["attendance"])
+        
+    def get_class_average(self, clas):
+        i = 0
+        sum = 0
+        for student in self.data[clas]:
+            for subject in self.data[clas][student]:
+                if (not subject=="attendance"):
+                    for grade in self.data[clas][student][subject]:
+                        i = i+1
+                        sum = sum + grade
+        return sum/i
+        
+    def get_average(self):
+        i = 0
+        sum = 0
+        for clas in self.data:
+            for student in self.data[clas]:
+                for subject in self.data[clas][student]:
+                    if (not subject=="attendance"):
+                        for grade in self.data[clas][student][subject]:
+                            i = i+1
+                            sum = sum + grade
+        return sum/i
+                
 
 if __name__ == "__main__":
-	school = School()
-	print("Creating school")
-	class1 = Class()
-	print("Creating class1")
-	class2 = Class()
-	print("Creating class2")
-	school.AddClass(class1)
-	school.AddClass(class2)
-	student = Student("stu", "dent")
-	student.AddGrade(3.2)
-	student.AddGrade(4.1)
-	student.AddAttendance(1)
-	student.AddAttendance(1)
-	student.AddAttendance(1)
-	student.AddAttendance(0)
-	grade = float(input("Podaj ocene dla studenta"))
-	student.AddGrade(grade)
-	student2 = Student("stus", "denst")
-	student2.AddGrade(2.2)
-	student2.AddGrade(6.1)
-	class2.AddStudent(student2)
-	print("Srednia studenta:")
-	print(student.GetAverage())
-	class1.AddStudent(student)
-	print("Srednia szkoly:")
-	print(school.GetAverage())
-	print("Srednia w klasie 1:")
-	print(class1.GetAverage())
-	print("Frekwencja studenta:")
-	print(student.CountAttendance())
-
-
-
-
-
-
-
-
-
+    data = None
+    if(os.path.exists('szkola.json')):
+        with open('szkola.json', 'r') as fp:
+            data = json.load(fp)
+    print(data is not None)
+    school = School()
+    if(data is not None):
+        print('czytanie z poprzedniego pliku...')
+        school.data = data
+    else:
+        print("Tworzenie szkoly")
+        school.add_class("1")
+        school.add_student("1", "student1")
+        school.add_subject("1", "python")
+        school.add_grade("1", "student1", "python", 2)
+        school.add_grade("1", "student1", "python", 3)
+        school.add_grade("1", "student1", "python", 3.5)
+        school.add_class("2")
+        school.add_student("2", "student drugiej klasy")
+        school.add_subject("2", "python2")
+        school.add_subject("2", "jezyk polski")
+        school.add_grade("2", "student drugiej klasy", "python2", 6)
+        school.add_grade("2", "student drugiej klasy", "jezyk polski", 5)
+        school.add_grade("2", "student drugiej klasy", "jezyk polski", 6)
+        print("Srednia:")
+        print(school.get_average())
+        print("srednia w klasie 1:")
+        print(school.get_class_average("1"))
+        school.add_attendance("1", "student1", 1)
+        school.add_attendance("1", "student1", 1)
+        school.add_attendance("1", "student1", 1)
+        school.add_attendance("1", "student1", 1)
+        school.add_attendance("1", "student1", 0)
+        school.add_attendance("1", "student1", 1)
+        school.add_attendance("1", "student1", 1)
+        school.add_attendance("1", "student1", 1)
+        print("Frekwencja studenta1: ")
+        print(school.get_attendance("1", "student1"))
+    parser = argparse.ArgumentParser(description='Process some integers.')
+    parser.add_argument('-o', '--ocena', metavar='ocena', type=int,
+                     help='ocena dla studenta')
+    args = parser.parse_args()
+    if(vars(args)['ocena'] is not None):
+        print("Dodano ocene :")
+        print(vars(args)['ocena'])
+        school.add_grade("1", "student1", "python", vars(args)['ocena'])
+        print("Srednia szkoly po dodaniu oceny dla student1: (parametr -o przy uruchamianiu)")
+    else:
+        print("Srednia szkoly bez dodania oceny dla student1: (parametr -o przy uruchamianiu)")
+    print(school.get_average())
+    print("Zapisywanie szkoly do pliku")
+    with open('szkola.json', 'w') as fp:
+        json.dump(school.data, fp)
